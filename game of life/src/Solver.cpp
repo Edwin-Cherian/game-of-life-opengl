@@ -1,4 +1,5 @@
 #include "Solver.h"
+#include "Solver.h"
 #include <iostream>
 #include <chrono>>
 Solver::Solver(float width, float height)
@@ -30,6 +31,7 @@ void Solver::wallCollision(float* quadAttribIdx, float* velocityIdx, float p_siz
 		*(velocityIdx + 1) *= -1;
 	}
 }
+
 
 void Solver::particleCollision(float* quadAttribIdx, int p_count, int p_size, int stride, Grid* grid)
 {

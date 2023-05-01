@@ -40,8 +40,8 @@ int main(void)
         return -1;
 
     /* Create a windowed mode window and its OpenGL context */
-    float WINDOW_WIDTH = 1200.0f;
-    float WINDOW_HEIGHT = 700.0f;
+    float WINDOW_WIDTH  = 800.0f;
+    float WINDOW_HEIGHT = 800.0f;
 
     window = glfwCreateWindow((int) WINDOW_WIDTH, (int) WINDOW_HEIGHT, "Hello World", NULL, NULL);
     if (!window)
@@ -65,69 +65,109 @@ int main(void)
     
     // <------ define constants and settings ------>
     srand((unsigned int) time(NULL));
-    const int vertex_acount = 5;
+    const int vertex_acount = 3;
     const int quad_vacount = 4 * vertex_acount;
     const int quad_icount = 6;
 
-    const int p_count = 10000;
-    float* positions = new float[p_count * quad_vacount];
-    cudaMallocManaged(&positions, p_count * quad_vacount * sizeof(float));
-    float* velocities = new float[p_count * 2];
-    unsigned int* indices = new unsigned int[p_count * 6];
+    const float p_size = 19.0f;
+    const float spacing = 1.0f;
+    const int cols = (int) WINDOW_WIDTH  / (p_size + spacing);
+    const int rows = (int) WINDOW_HEIGHT / (p_size + spacing);
+    const int cells = rows * cols;
+    float* positions = new float[cells * quad_vacount];
+    cudaMallocManaged(&positions, cells * quad_vacount * sizeof(float));
+    float* positions_buffer = new float[cells * quad_vacount];
+    cudaMallocManaged(&positions_buffer, cells * quad_vacount * sizeof(float));
+    unsigned int* indices = new unsigned int[cells * 6];
     
-    const float p_size = 4.0f;
-    const float spacing = p_size + 1.0f;
 
-    const int rows = 3;
-    const int cols = 3;
 
     Grid* grid = new Grid;
 
 
 
     // fill position array with vertex buffer data for particles
-    for (int i = 0; i < p_count; i++)
+    float x_offset = 1.0;
+    float y_offset = 1.0;
+    for (int i = 0; i < rows; i++)
     {   
-        const float x_offset = (float)(rand() % (1100 - 100 + 1) + 100);
-        const float y_offset = (float)(rand() % (600 - 100 + 1) + 100);
-        const float t_offset = (float)round(rand() % 2);
-        // top left
-        positions[i * quad_vacount + 0] = x_offset;
-        positions[i * quad_vacount + 1] = y_offset;
-        positions[i * quad_vacount + 2] = 0.0f;
-        positions[i * quad_vacount + 3] = 0.0f;
-        positions[i * quad_vacount + 4] = t_offset;
-        // top right  quad_vacount
-        positions[i * quad_vacount + 5] = x_offset + p_size;
-        positions[i * quad_vacount + 6] = y_offset;
-        positions[i * quad_vacount + 7] = 0.5f;
-        positions[i * quad_vacount + 8] = 0.0f;
-        positions[i * quad_vacount + 9] = t_offset;
-        // bottom     quad_vacount
-        positions[i * quad_vacount + 10] = x_offset + p_size;
-        positions[i * quad_vacount + 11] = y_offset + p_size;
-        positions[i * quad_vacount + 12] = 0.5f;
-        positions[i * quad_vacount + 13] = 1.0f;
-        positions[i * quad_vacount + 14] = t_offset;
-        // bottom     quad_vacount
-        positions[i * quad_vacount + 15] = x_offset;
-        positions[i * quad_vacount + 16] = y_offset + p_size;
-        positions[i * quad_vacount + 17] = 0.0f;
-        positions[i * quad_vacount + 18] = 1.0f;
-        positions[i * quad_vacount + 19] = t_offset;
+        for (int j = 0; j < cols; j++) {
+            // top left
+            positions[(i * cols + j) * quad_vacount +  0] = x_offset;
+            positions[(i * cols + j) * quad_vacount +  1] = y_offset;
+            positions[(i * cols + j) * quad_vacount +  2] = 0.0f;
+            // top rig(h * cols + j)t  quad_vacount     
+            positions[(i * cols + j) * quad_vacount +  3] = x_offset + p_size;
+            positions[(i * cols + j) * quad_vacount +  4] = y_offset;
+            positions[(i * cols + j) * quad_vacount +  5] = 0.0f;
+            // bottom (  * cols + j)   quad_vacount    
+            positions[(i * cols + j) * quad_vacount +  6] = x_offset + p_size;
+            positions[(i * cols + j) * quad_vacount +  7] = y_offset + p_size;
+            positions[(i * cols + j) * quad_vacount +  8] = 0.0f;
+            // bottom (  * cols + j)   quad_vacount     
+            positions[(i * cols + j) * quad_vacount +  9] = x_offset;
+            positions[(i * cols + j) * quad_vacount + 10] = y_offset + p_size;
+            positions[(i * cols + j) * quad_vacount + 11] = 0.0f;
 
-        grid->AddObject(&positions[i * quad_vacount]);
+            x_offset += p_size + spacing;
+
+            //grid->AddObject(&positions[i * quad_vacount]);
+        }
+        x_offset = 1.0;
+        y_offset += p_size + spacing;
     }
 
-    // fill velocities array with random x and y velocities
-    for (int i = 0; i < p_count; i++)
+    x_offset = 1.0;
+    y_offset = 1.0;
+    for (int i = 0; i < rows; i++)
     {
-        velocities[i * 2 + 1] = (float)(rand() % 200 - 100) / 200;
-        velocities[i * 2 + 0] = (float)(rand() % 200 - 100) / 200;
+        for (int j = 0; j < cols; j++) {
+            // top left
+            positions_buffer[(i * cols + j) * quad_vacount + 0] = x_offset;
+            positions_buffer[(i * cols + j) * quad_vacount + 1] = y_offset;
+            positions_buffer[(i * cols + j) * quad_vacount + 2] = 0.0f;
+            // top ri_bufferg(h * cols + j)t  quad_vacount     
+            positions_buffer[(i * cols + j) * quad_vacount + 3] = x_offset + p_size;
+            positions_buffer[(i * cols + j) * quad_vacount + 4] = y_offset;
+            positions_buffer[(i * cols + j) * quad_vacount + 5] = 0.0f;
+            // bottom_buffer (  * cols + j)   quad_vacount    
+            positions_buffer[(i * cols + j) * quad_vacount + 6] = x_offset + p_size;
+            positions_buffer[(i * cols + j) * quad_vacount + 7] = y_offset + p_size;
+            positions_buffer[(i * cols + j) * quad_vacount + 8] = 0.0f;
+            // bottom_buffer (  * cols + j)   quad_vacount     
+            positions_buffer[(i * cols + j) * quad_vacount + 9] = x_offset;
+            positions_buffer[(i * cols + j) * quad_vacount + 10] = y_offset + p_size;
+            positions_buffer[(i * cols + j) * quad_vacount + 11] = 0.0f;
+
+            x_offset += p_size + spacing;
+
+            //grid->AddObject(&positions[i * quad_vacount]);
+        }
+        x_offset = 1.0;
+        y_offset += p_size + spacing;
     }
+
+
+
+    for (int i = -1; i < 2; i++)
+    {
+        positions[((i+2) * cols + 2) * quad_vacount +  2] = 1.0f;
+        positions[((i+2) * cols + 2) * quad_vacount +  5] = 1.0f;
+        positions[((i+2) * cols + 2) * quad_vacount +  8] = 1.0f;
+        positions[((i+2) * cols + 2) * quad_vacount + 11] = 1.0f;
+    }
+    /*for (int i = -1; i < 2; i++)
+    {
+        positions[(30 * cols + (i+30)) * quad_vacount + 2] = 1.0f;
+        positions[(30 * cols + (i+30)) * quad_vacount + 5] = 1.0f;
+        positions[(30 * cols + (i+30)) * quad_vacount + 8] = 1.0f;
+        positions[(30 * cols + (i+30)) * quad_vacount + 11] = 1.0f;
+    }*/
+    
+
 
     // fill indices array with index buffer data for particles
-    for (int i = 0; i < p_count; i++)
+    for (int i = 0; i < cells; i++)
     {
         // join order: ( TL, TR, BR )
         indices[i * quad_icount + 0] = i * 4;
@@ -140,16 +180,6 @@ int main(void)
     }
 
 
-    //grid.ReadData(&positions[20 *0]);
-    //grid.RemoveObject(&positions[20 *1]);
-    //grid.ReadData(&positions[20*0]);
-    /*auto t = grid.FindNear(&positions[20 *0]);
-    std::cout << "testing nearby fuunc" << std::endl;
-    for (float* v : t)
-    {
-        std::cout << *v << ", " << *(v + 1) << std::endl;
-    }*/
-    
     
     // brackets to create a scope and its just because opengl is annoying
     // and won't "properly" terminate otherwise
@@ -163,16 +193,14 @@ int main(void)
         GLCall(glBindVertexArray(vao));
 
         VertexArray va;
-        VertexBuffer vb(positions,  p_count * quad_vacount * 4); // p_count * vertices attributes per quad * 4 for size of 1 attribute
+        VertexBuffer vb(positions,  cells * quad_vacount * 4); // cells * vertices attributes per quad * 4 for size of 1 attribute
         VertexBufferLayout layout;
         layout.Push<float>(2); // 2 floats for position
-        layout.Push<float>(2); // 2 floats for tex coords 
-        layout.Push<float>(1); // 1 float for tex idx 
+        layout.Push<float>(1); // 1 float for alive/dead
 
         va.AddBuffer(vb, layout);
-        
-        // ibo = index buffer object, links buffer with vao
-        IndexBuffer ib(indices, p_count * 6); // p_count = # quads and each quad = 6 indices
+
+        IndexBuffer ib(indices, cells * 6); // cells = # quads and each quad = 6 indices
 
         // projection matrix
         glm::vec3 translation(0, 0, 0);
@@ -181,74 +209,63 @@ int main(void)
         glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
         glm::mat4 mvp = proj * view * model;
 
-        float dx = 0;
 
         // setting up shaders
         Shader shader("res/shaders/Basic.shader");
         shader.Bind();
         shader.SetUniform4f("u_Color", 0.2f, 0.9f, 0.4f, 1.0f);
         shader.SetUniformMat4f("u_MVP", mvp);
-
-
-        /*Texture texture2("res/textures/hit.png");
-        texture2.Bind(1);
-        shader.SetUniform1i("u_Textures", 1);*/
-
-        Texture texture("res/textures/circles.png");
-        texture.Bind(); // bind is 0 by default
-        shader.SetUniform1i("u_Textures", 0); // # needs to match bind # from above
         
-        
-        /*va.Unbind();
-        vb.Unbind();
-        ib.Unbind();
-        shader.Unbind();*/
 
         Renderer renderer;
-        Solver solver(WINDOW_WIDTH, WINDOW_HEIGHT);
+        Solver solver(WINDOW_WIDTH, WINDOW_HEIGHT, rows, cols, quad_vacount);
 
         // initialise gui
         ImGui::CreateContext();
         ImGui_ImplGlfwGL3_Init(window, true);
         ImGui::StyleColorsDark();
 
-        bool show_demo_window = true;
-        bool show_another_window = false;
-        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.90f, 1.00f);
 
         // initialise r value for rect colour
         float r = 0.1f;
         float increment = 0.01f;
 
+        double xpos, ypos;
+        bool running = true;
+
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
         {
-            float dt = (1000.0f / ImGui::GetIO().Framerate);
-            std::cout << dt << std::endl;
-            //auto start = std::chrono::high_resolution_clock::now();
-            for (int i = 0; i < p_count; i++)
-            {
-                grid->RemoveObject(&positions[quad_vacount * i]);
-            }
-            //auto stop = std::chrono::high_resolution_clock::now();
-            //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-            //std::cout << duration.count() << std::endl;
+            if (running)
+                solver.updateCells(positions, positions_buffer);
 
-            for (int i = 0; i < p_count; i++)
-            {
-                solver.updatePosition(&positions[quad_vacount * i], &velocities[2 * i], p_size,1);
-                solver.wallCollision(&positions[quad_vacount * i], &velocities[2 * i], p_size);
-                grid->AddObject(&positions[quad_vacount * i]);
+            // keyboard event handlers
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+                running = false;
+            }
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                running = true;
+            }
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                solver.resetCells(positions);
             }
 
-            /*for (int j = 0; j < p_count; j++)
-            {
-                solver.particleCollision(&positions[quad_vacount * j], p_count, p_size, quad_vacount, grid);
-            }*/
+            // mouse event handlers
+            if (glfwGetWindowAttrib(window, GLFW_HOVERED) && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+                glfwGetCursorPos(window, &xpos, &ypos);
+                //ypos = row and xpos = col
+                solver.setCellState(positions, (int)(ypos / (p_size + spacing)), (int)(xpos / (p_size + spacing)), 1.0f);
+            } 
+            else if (glfwGetWindowAttrib(window, GLFW_HOVERED) && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+                glfwGetCursorPos(window, &xpos, &ypos);
+                //ypos = row and xpos = col
+                solver.setCellState(positions, (int)(ypos / (p_size + spacing)), (int)(xpos / (p_size + spacing)), 0.0f);
+            }
 
-            solver.particleCollision2(positions, p_count, p_size, quad_vacount, grid);
-
-            vb.UpdateBuffer(positions, p_count * quad_vacount * 4);
+            
+            
+            vb.UpdateBuffer(positions, cells * quad_vacount * 4);
 
             /* Render here */
             renderer.Clear();
@@ -298,125 +315,3 @@ int main(void)
     return 0;
 }
 
-
-
-
-
-
-
-
-
-//using namespace std;
-//
-//int main() {
-//    // define program settings
-//    sf::RenderWindow window(sf::VideoMode(1280, 720), "My sim");
-//    //window.setVerticalSyncEnabled(true);
-//    //window.setFramerateLimit(144);
-//    const int numParticles = 5000;
-//
-//    // create random seed based on time
-//    srand(time(NULL));
-//
-//    // define particle object
-//    class Particle {
-//        sf::CircleShape point;
-//        sf::Vector2f position;
-//        sf::Vector2f velocity;
-//    public:
-//        Particle() {
-//            point.setRadius(1);
-//            point.setFillColor(sf::Color::Green);
-//            position.x = (float)(rand() % (1000 - 200 + 1) + 200);
-//            position.y = (float)(rand() % (600 - 100 + 1) + 100);
-//            velocity.x = (float)(rand() % 20 - 10) / 10;
-//            velocity.y = (float)(rand() % 20 - 10) / 10;
-//
-//        }
-//        void updatePos() {
-//            position.x += velocity.x;
-//            position.y += velocity.y;
-//            resolveCollisions();
-//            point.setPosition(position);
-//        }
-//
-//        void resolveCollisions() {
-//            if (position.x > 1280 - point.getRadius()) {
-//                position.x = 1280 - point.getRadius();
-//                velocity.x *= -1;
-//            }
-//            else if (position.x < 0) {
-//                position.x = 0;
-//                velocity.x *= -1;
-//            }
-//            if (position.y > 720 - point.getRadius()) {
-//                position.y = 720 - point.getRadius();
-//                velocity.y *= -1;
-//            }
-//            else if (position.y < 0) {
-//                position.y = 0;
-//                velocity.y *= -1;
-//            }
-//        }
-//
-//        void render(sf::RenderWindow& window) {
-//            window.draw(point);
-//        }
-//
-//        sf::Vector2f getPos() {
-//            return position;
-//        }
-//
-//        sf::CircleShape getShape() {
-//            return point;
-//        }
-//    };
-//
-//    // define array for accessing particles
-//    //array<Particle, 3500> particles;
-//    Particle* particles = new Particle[numParticles];
-//
-//    // define clock and text for performance metrics
-//    sf::Clock clock;
-//    sf::Font sans;
-//    sans.loadFromFile("C:/Users/edwin/Documents/C++ projects/C++ fonts/LDFComicSansLight.ttf");
-//    sf::Text fps("", sans, 20);
-//    fps.setPosition(0, 0);
-//    fps.setFillColor(sf::Color::Red);
-//
-//
-//    while (window.isOpen()) {
-//        // <------ clear screen ------>
-//        window.clear();
-//
-//        // <------ display render time ------> 
-//        sf::Time elapsed = clock.restart();
-//        fps.setString("render time: " + to_string(elapsed.asMilliseconds()) + " ms");
-//
-//
-//        // <------ define close window events ------>
-//        sf::Event event;
-//        while (window.pollEvent(event)) {
-//            if (event.type == sf::Event::Closed)
-//                window.close();
-//            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
-//                window.close();
-//        }
-//
-//
-//        // <------ run physics ------>
-//        for (int i = 0; i < numParticles; i++) {
-//            //cout << particles[i].getPos().x << " ";
-//            particles[i].updatePos();
-//            particles[i].render(window);
-//        }
-//
-//        // <------ render objects ------>
-//        window.draw(fps);
-//        window.display();
-//
-//    }
-//
-//
-//    return 0;
-//}
