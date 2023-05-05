@@ -611,13 +611,6 @@
     <ClCompile Include="src\VertexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\textures\circles.png" />
-    <Image Include="res\textures\enemy.png" />
-    <Image Include="res\textures\enemy2.png" />
-    <Image Include="res\textures\free.png" />
-    <Image Include="res\textures\hit.png" />
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="src\gtest.cu" />
     <CudaCompile Include="src\Solver.cu" />
   </ItemGroup>

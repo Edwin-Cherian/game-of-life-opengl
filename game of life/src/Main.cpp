@@ -24,12 +24,9 @@
 
 #include "Solver.h"
 #include <vector>
-#include <typeinfo>
 #include "Grid.h"
 #include <chrono>
 
-//#include "test.h"
-#include "gtest.h"
 
 int main(void)
 {
@@ -66,11 +63,11 @@ int main(void)
     // <------ define constants and settings ------>
     srand((unsigned int) time(NULL));
     const int vertex_acount = 3;
-    const int quad_vacount = 4 * vertex_acount;
-    const int quad_icount = 6;
+    const int quad_vacount  = 4 * vertex_acount;
+    const int quad_icount   = 6;
 
-    const float p_size = 19.0f;
-    const float spacing = 1.0f;
+    const float p_size  = 8.0f;
+    const float spacing = 0.0f;
     const int cols = (int) WINDOW_WIDTH  / (p_size + spacing);
     const int rows = (int) WINDOW_HEIGHT / (p_size + spacing);
     const int cells = rows * cols;
@@ -79,11 +76,8 @@ int main(void)
     float* positions_buffer = new float[cells * quad_vacount];
     cudaMallocManaged(&positions_buffer, cells * quad_vacount * sizeof(float));
     unsigned int* indices = new unsigned int[cells * 6];
-    
-
 
     Grid* grid = new Grid;
-
 
 
     // fill position array with vertex buffer data for particles
@@ -96,22 +90,20 @@ int main(void)
             positions[(i * cols + j) * quad_vacount +  0] = x_offset;
             positions[(i * cols + j) * quad_vacount +  1] = y_offset;
             positions[(i * cols + j) * quad_vacount +  2] = 0.0f;
-            // top rig(h * cols + j)t  quad_vacount     
+            // top right  
             positions[(i * cols + j) * quad_vacount +  3] = x_offset + p_size;
             positions[(i * cols + j) * quad_vacount +  4] = y_offset;
             positions[(i * cols + j) * quad_vacount +  5] = 0.0f;
-            // bottom (  * cols + j)   quad_vacount    
+            // bottom right
             positions[(i * cols + j) * quad_vacount +  6] = x_offset + p_size;
             positions[(i * cols + j) * quad_vacount +  7] = y_offset + p_size;
             positions[(i * cols + j) * quad_vacount +  8] = 0.0f;
-            // bottom (  * cols + j)   quad_vacount     
+            // bottom left   
             positions[(i * cols + j) * quad_vacount +  9] = x_offset;
             positions[(i * cols + j) * quad_vacount + 10] = y_offset + p_size;
             positions[(i * cols + j) * quad_vacount + 11] = 0.0f;
 
             x_offset += p_size + spacing;
-
-            //grid->AddObject(&positions[i * quad_vacount]);
         }
         x_offset = 1.0;
         y_offset += p_size + spacing;
@@ -119,6 +111,7 @@ int main(void)
 
     x_offset = 1.0;
     y_offset = 1.0;
+    // fill in data for buffer containing updated cell states
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++) {
@@ -126,44 +119,25 @@ int main(void)
             positions_buffer[(i * cols + j) * quad_vacount + 0] = x_offset;
             positions_buffer[(i * cols + j) * quad_vacount + 1] = y_offset;
             positions_buffer[(i * cols + j) * quad_vacount + 2] = 0.0f;
-            // top ri_bufferg(h * cols + j)t  quad_vacount     
+            // top right 
             positions_buffer[(i * cols + j) * quad_vacount + 3] = x_offset + p_size;
             positions_buffer[(i * cols + j) * quad_vacount + 4] = y_offset;
             positions_buffer[(i * cols + j) * quad_vacount + 5] = 0.0f;
-            // bottom_buffer (  * cols + j)   quad_vacount    
+            // bottom right  
             positions_buffer[(i * cols + j) * quad_vacount + 6] = x_offset + p_size;
             positions_buffer[(i * cols + j) * quad_vacount + 7] = y_offset + p_size;
             positions_buffer[(i * cols + j) * quad_vacount + 8] = 0.0f;
-            // bottom_buffer (  * cols + j)   quad_vacount     
+            // bottom left   
             positions_buffer[(i * cols + j) * quad_vacount + 9] = x_offset;
             positions_buffer[(i * cols + j) * quad_vacount + 10] = y_offset + p_size;
             positions_buffer[(i * cols + j) * quad_vacount + 11] = 0.0f;
 
             x_offset += p_size + spacing;
-
-            //grid->AddObject(&positions[i * quad_vacount]);
         }
         x_offset = 1.0;
         y_offset += p_size + spacing;
     }
 
-
-
-    for (int i = -1; i < 2; i++)
-    {
-        positions[((i+2) * cols + 2) * quad_vacount +  2] = 1.0f;
-        positions[((i+2) * cols + 2) * quad_vacount +  5] = 1.0f;
-        positions[((i+2) * cols + 2) * quad_vacount +  8] = 1.0f;
-        positions[((i+2) * cols + 2) * quad_vacount + 11] = 1.0f;
-    }
-    /*for (int i = -1; i < 2; i++)
-    {
-        positions[(30 * cols + (i+30)) * quad_vacount + 2] = 1.0f;
-        positions[(30 * cols + (i+30)) * quad_vacount + 5] = 1.0f;
-        positions[(30 * cols + (i+30)) * quad_vacount + 8] = 1.0f;
-        positions[(30 * cols + (i+30)) * quad_vacount + 11] = 1.0f;
-    }*/
-    
 
 
     // fill indices array with index buffer data for particles
@@ -254,16 +228,14 @@ int main(void)
             // mouse event handlers
             if (glfwGetWindowAttrib(window, GLFW_HOVERED) && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
                 glfwGetCursorPos(window, &xpos, &ypos);
-                //ypos = row and xpos = col
+                // ypos = row and xpos = col
                 solver.setCellState(positions, (int)(ypos / (p_size + spacing)), (int)(xpos / (p_size + spacing)), 1.0f);
             } 
             else if (glfwGetWindowAttrib(window, GLFW_HOVERED) && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
                 glfwGetCursorPos(window, &xpos, &ypos);
-                //ypos = row and xpos = col
+                // ypos = row and xpos = col
                 solver.setCellState(positions, (int)(ypos / (p_size + spacing)), (int)(xpos / (p_size + spacing)), 0.0f);
-            }
-
-            
+            }    
             
             vb.UpdateBuffer(positions, cells * quad_vacount * 4);
 
@@ -276,8 +248,7 @@ int main(void)
             shader.SetUniform4f("u_Color", r, 0.2f, 0.3f, 1.0f);
             shader.SetUniformMat4f("u_MVP", mvp);
 
-            renderer.Draw(va, ib, shader);
-            
+            renderer.Draw(va, ib, shader);      
 
             if (r > 1.0f || r < 0.0f)
                 increment *= -1;
@@ -306,7 +277,7 @@ int main(void)
     }
 
     cudaFree(positions);
-    //delete[] positions;
+    cudaFree(positions_buffer);
     delete[] indices;
     grid->~Grid();
     ImGui_ImplGlfwGL3_Shutdown();

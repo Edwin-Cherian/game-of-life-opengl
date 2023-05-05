@@ -1378,23 +1378,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\textures\hit.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\textures\circles.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\textures\enemy.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\textures\enemy2.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\textures\free.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="src\Solver.cu" />
     <CudaCompile Include="src\gtest.cu" />
   </ItemGroup>

@@ -26,38 +26,15 @@ void Solver::resetCells(float* positions)
 	}
 }
 
+
+
 void Solver::updateCells(float* positions, float* positions_buffer)
 {
-	std::cout << "start" << std::endl;
-	for (int i = 0; i < ROWS * COLS; i++)
-	{
-		int neighbours = Solver::getNeighbours(positions, i * STRIDE + 2);
-		/*if (i % COLS == 0)
-			std::cout << std::endl;
-		std::cout << neighbours;*/
-		if ((positions[i * STRIDE + 2] == 1.0f && neighbours == 2) || neighbours == 3) {
-			positions_buffer[i * STRIDE +  2] = 1.0f;
-			positions_buffer[i * STRIDE +  5] = 1.0f;
-			positions_buffer[i * STRIDE +  8] = 1.0f;
-			positions_buffer[i * STRIDE + 11] = 1.0f;
-		}
-		else {
-			positions_buffer[i * STRIDE +  2] = 0.0f;
-			positions_buffer[i * STRIDE +  5] = 0.0f;
-			positions_buffer[i * STRIDE +  8] = 0.0f;
-			positions_buffer[i * STRIDE + 11] = 0.0f;
-		}
-	}
-	std::cout << "end" << std::endl;
-
-	for (int i = 0; i < ROWS * COLS; i++) {
-		positions[i * STRIDE +  2] = positions_buffer[i * STRIDE + 2];
-		positions[i * STRIDE +  5] = positions_buffer[i * STRIDE + 5];
-		positions[i * STRIDE +  8] = positions_buffer[i * STRIDE + 8];
-		positions[i * STRIDE + 11] = positions_buffer[i * STRIDE + 11];
-	}
+	g_updateCells<<<256, 256>>>(positions, positions_buffer, STRIDE, ROWS, COLS);
+	cudaDeviceSynchronize();
+	g_copyFromBuffer<<<256, 256>>>(positions, positions_buffer, STRIDE, ROWS, COLS);
+	cudaDeviceSynchronize();
 }
-
 
 int Solver::getNeighbours(float* positions, int idx)
 {
@@ -72,6 +49,51 @@ int Solver::getNeighbours(float* positions, int idx)
 	}
 	return count;
 }
+
+__global__
+void g_updateCells(float* positions, float* positions_buffer, int stride, int rows, int cols)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int thread_stride = blockDim.x * gridDim.x;
+	for (int i = idx; i < rows * cols; i += thread_stride) {
+		int neighbours = -1 * positions[i * stride + 2];
+		for (int j = -1; j < 2; j++)
+		{
+			for (int k = -1; k < 2; k++)
+			{
+				if (stride * (i + j * cols + k) + 2 >= 0 && stride * (1 + j * cols + k) + 2 <= rows * cols * 12)
+					neighbours += positions[stride * (i + j * cols + k) + 2];
+			}
+		}
+		if ((positions[i * stride + 2] == 1.0f && neighbours == 2) || neighbours == 3) {
+			positions_buffer[i * stride +  2] = 1.0f;
+			positions_buffer[i * stride +  5] = 1.0f;
+			positions_buffer[i * stride +  8] = 1.0f;
+			positions_buffer[i * stride + 11] = 1.0f;
+		}
+		else {
+			positions_buffer[i * stride +  2] = 0.0f;
+			positions_buffer[i * stride +  5] = 0.0f;
+			positions_buffer[i * stride +  8] = 0.0f;
+			positions_buffer[i * stride + 11] = 0.0f;
+		}
+	}
+}
+
+__global__
+void g_copyFromBuffer(float* positions, float* positions_buffer, int stride, int rows, int cols)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int thread_stride = blockDim.x * gridDim.x;
+	for (int i = idx; i < rows * cols; i += thread_stride) {
+		positions[i * stride +  2] = positions_buffer[i * stride +  2];
+		positions[i * stride +  5] = positions_buffer[i * stride +  5];
+		positions[i * stride +  8] = positions_buffer[i * stride +  8];
+		positions[i * stride + 11] = positions_buffer[i * stride + 11];
+	}
+}
+
+
 
 //void Solver::wallCollision(float* quadAttribIdx, float* velocityIdx, float p_size)
 //{

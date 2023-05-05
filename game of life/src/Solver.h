@@ -27,5 +27,8 @@ public:
 	int getNeighbours(float* positions, int idx);
 };
 
-//__global__
-//void mytest(std::vector<std::vector<std::vector<float*>>>* grid, float* positions, int p_count, int p_size, int stride);
+__global__
+void g_updateCells(float* positions, float* positions_buffer, int stride, int rows, int cols);
+__global__
+void g_copyFromBuffer(float* positions, float* positions_buffer, int stride, int rows, int cols);
+
